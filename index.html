@@ -3,234 +3,189 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Late Shift - Mobile Protocol</title>
+    <title>Late Shift - Hybrid Protocol</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: white; touch-action: none; }
         #hands-display {
             position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85); border: 2px solid #0f0; padding: 10px; border-radius: 5px; text-align: center; z-index: 20; width: 80%;
+            background: rgba(0, 0, 0, 0.85); border: 2px solid #0f0; padding: 10px; border-radius: 5px; text-align: center; z-index: 20; width: 300px;
         }
-        .ingredient-slot { display: inline-block; width: 28%; height: 30px; border: 1px dashed #444; margin: 0 2px; line-height: 30px; font-size: 12px; }
+        .ingredient-slot { display: inline-block; width: 80px; height: 30px; border: 1px dashed #444; margin: 0 5px; line-height: 30px; font-size: 12px; }
         .filled { background: #0f0; color: #000; font-weight: bold; }
         
-        /* MOBILE CONTROLS */
-        #joystick-container {
-            position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px;
-            background: rgba(255,255,255,0.1); border-radius: 50%; z-index: 50; border: 2px solid rgba(15, 255, 0, 0.3);
-        }
-        #joystick-knob {
-            position: absolute; top: 35px; left: 35px; width: 50px; height: 50px;
-            background: #0f0; border-radius: 50%; opacity: 0.5;
-        }
-        #mobile-reject {
-            position: absolute; bottom: 40px; right: 40px; width: 80px; height: 80px;
-            background: rgba(255,0,0,0.5); border: 3px solid red; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center; font-weight: bold; z-index: 50;
-        }
-        #mobile-cook {
-            position: absolute; bottom: 140px; right: 40px; width: 80px; height: 80px;
-            background: rgba(255, 255, 0, 0.5); border: 3px solid yellow; border-radius: 50%;
-            display: none; align-items: center; justify-content: center; font-weight: bold; z-index: 50; color: black;
-        }
+        /* CONTROLS OVERLAY */
+        #joystick-container { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #0f0; display: none; }
+        #joystick-knob { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #0f0; border-radius: 50%; opacity: 0.5; }
+        
+        #mobile-btns { position: absolute; bottom: 40px; right: 40px; display: none; flex-direction: column; gap: 10px; }
+        .m-btn { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; border: 3px solid white; }
+        #btn-reject { background: rgba(255,0,0,0.5); border-color: red; }
+        #btn-cook { background: rgba(255,255,0,0.5); border-color: yellow; color: black; display: none; }
 
-        #protocol-note {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #f0e68c; color: #000; padding: 15px; border: 5px solid #8b4513;
-            width: 80%; max-height: 70%; overflow-y: auto; display: none; z-index: 150;
-        }
-        #speech-bubble { position: absolute; background: #fff; color: #000; padding: 8px; border-radius: 10px; border: 2px solid #333; display: none; font-weight: bold; pointer-events: none; }
-        #ui { position: absolute; top: 10px; left: 10px; color: #0f0; z-index: 10; font-size: 16px; }
-        #start-screen { position:fixed; width:100%; height:100%; background:#000; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align: center; }
-        .btn { background: #f00; color: #fff; border: none; padding: 15px 40px; cursor: pointer; font-size: 20px; margin-top: 20px; }
-        #scare-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 200; }
-        #progress-container { position: absolute; bottom: 130px; left: 50%; transform: translateX(-50%); width: 200px; height: 10px; border: 1px solid #fff; display: none; }
+        #ui { position: absolute; top: 10px; left: 10px; color: #0f0; z-index: 10; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #0f0; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #progress-container { position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); width: 200px; height: 15px; border: 2px solid #fff; display: none; }
         #progress-bar { width: 0%; height: 100%; background: #0f0; }
+        #start-screen { position:fixed; width:100%; height:100%; background:#000; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align: center; }
+        .btn { background: #f00; color: #fff; border: none; padding: 15px 40px; cursor: pointer; font-size: 20px; }
     </style>
 </head>
 <body>
 
-    <div id="scare-flash"></div>
     <div id="start-screen">
-        <h1 style="color:red; font-size: 40px;">LATE SHIFT MOBILE</h1>
-        <p>LEFT SIDE: Walk | RIGHT SIDE: Look<br>TAP ITEMS TO GRAB</p>
+        <h1 style="color:red;">LATE SHIFT</h1>
+        <p>PC: WASD + Mouse + E/R/G<br>Mobile: Joystick + Tap + Buttons</p>
         <button class="btn" onclick="startGame()">START SHIFT</button>
     </div>
 
     <div id="joystick-container"><div id="joystick-knob"></div></div>
-    <div id="mobile-reject">REJECT</div>
-    <div id="mobile-cook">HOLD TO COOK</div>
-
-    <div id="protocol-note">
-        <h3 style="margin:0">SHADOW PROTOCOL</h3>
-        <p>1. No Headphones. 2. Must have shadows. 3. Face the counter.</p>
-        <button onclick="document.getElementById('protocol-note').style.display='none'" style="width:100%; padding:10px;">CLOSE</button>
+    <div id="mobile-btns">
+        <div id="btn-cook" class="m-btn">COOK</div>
+        <div id="btn-reject" class="m-btn">REJECT</div>
     </div>
 
     <div id="hands-display">
         <div id="slot-1" class="ingredient-slot">EMPTY</div>
         <div id="slot-2" class="ingredient-slot">EMPTY</div>
         <div id="slot-3" class="ingredient-slot">EMPTY</div>
-        <div id="final-item" style="margin-top: 5px; color: #ffff00; font-size: 12px;"></div>
+        <div id="final-item" style="color:yellow; font-weight:bold; margin-top:5px;"></div>
     </div>
 
     <div id="ui">CASH: $<span id="cash">0</span></div>
     <div id="progress-container"><div id="progress-bar"></div></div>
+    <div id="crosshair"></div>
 
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 
         let cash = 0, currentCustomer = null, gameActive = false, inventory = [];
-        let yaw = 0, pitch = 0, gProgress = 0;
-        let moveX = 0, moveZ = 0;
-        let currentOrder = [];
+        let yaw = 0, pitch = 0, gProgress = 0, isHoldingG = false;
+        let moveX = 0, moveZ = 0, keys = {};
 
-        // --- SCENE SETUP ---
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-        const sun = new THREE.PointLight(0xffffff, 50); sun.position.set(0, 5, -1); sun.castShadow = true;
-        scene.add(sun);
+        // --- DETECT DEVICE ---
+        const isMobile = /Android|iPhone/i.test(navigator.userAgent);
+        if(isMobile) {
+            document.getElementById('joystick-container').style.display = 'block';
+            document.getElementById('mobile-btns').style.display = 'flex';
+            document.getElementById('crosshair').style.display = 'none';
+        }
 
+        // --- WORLD ---
+        scene.add(new THREE.AmbientLight(0xffffff, 0.5));
         const counter = new THREE.Mesh(new THREE.BoxGeometry(8, 1.1, 2), new THREE.MeshStandardMaterial({color: 0x221100}));
-        counter.position.set(0, 0.55, -2); counter.receiveShadow = true; scene.add(counter);
+        counter.position.set(0, 0.55, -2); scene.add(counter);
         
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), new THREE.MeshStandardMaterial({color: 0x050505}));
-        floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
-
-        const clipboard = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.7), new THREE.MeshStandardMaterial({color: 0xffffff}));
-        clipboard.position.set(2, 1.12, -1.8); clipboard.name = "Protocol Clipboard"; scene.add(clipboard);
-
         function makeItem(x, color, name) {
             const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), new THREE.MeshStandardMaterial({color: color}));
             m.position.set(x, 1.15, -2.3); m.name = name; scene.add(m);
         }
         makeItem(-1.5, 0xd2b48c, "Bread"); makeItem(-0.5, 0x800000, "Meat"); makeItem(0.5, 0x2ecc71, "Lettuce"); makeItem(1.5, 0xe74c3c, "Tomato");
 
-        // --- CHARACTER LOGIC ---
-        function createCharacter(isAnomaly) {
-            const group = new THREE.Group();
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), new THREE.MeshStandardMaterial({color: 0xffdbac}));
-            head.position.y = 1.7; group.add(head);
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), new THREE.MeshStandardMaterial({color: Math.random()*0xffffff}));
-            body.position.y = 1.1; group.add(body);
-
-            if(isAnomaly && Math.random() > 0.5) { // HEADPHONE ANOMALY
-                const mat = new THREE.MeshStandardMaterial({color: 0x000000});
-                const band = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.05, 0.1), mat); band.position.y = 0.22;
-                const cL = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.2), mat); cL.position.set(-0.22, 0, 0);
-                const cR = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.2, 0.2), mat); cR.position.set(0.22, 0, 0);
-                head.add(band, cL, cR);
+        // --- PC CONTROLS ---
+        window.addEventListener('keydown', (e) => { 
+            keys[e.code] = true; 
+            if(e.code === 'KeyE') interact();
+            if(e.code === 'KeyR') reject();
+            if(e.code === 'KeyG') isHoldingG = true;
+        });
+        window.addEventListener('keyup', (e) => { 
+            keys[e.code] = false; 
+            if(e.code === 'KeyG') { isHoldingG = false; gProgress = 0; document.getElementById('progress-container').style.display='none'; }
+        });
+        window.addEventListener('mousemove', (e) => {
+            if(gameActive && !isMobile) {
+                yaw -= e.movementX * 0.002;
+                pitch -= e.movementY * 0.002;
+                pitch = Math.max(-1.5, Math.min(1.5, pitch));
+                camera.rotation.set(pitch, yaw, 0, 'YXZ');
             }
-            group.position.set(0, 0, -10); group.userData = { isAnomaly };
-            return group;
+        });
+
+        // --- MOBILE CONTROLS ---
+        let touchStartX = 0, touchStartY = 0;
+        window.addEventListener('touchstart', (e) => {
+            if(!isMobile) return;
+            const t = e.touches[0];
+            if(t.clientX < window.innerWidth / 2) { touchStartX = t.clientX; touchStartY = t.clientY; }
+            else { interact(t.clientX, t.clientY); }
+        });
+
+        // --- SHARED LOGIC ---
+        function interact(tx, ty) {
+            const mouse = new THREE.Vector2();
+            if(tx !== undefined) {
+                mouse.x = (tx / window.innerWidth) * 2 - 1;
+                mouse.y = -(ty / window.innerHeight) * 2 + 1;
+            }
+            const ray = new THREE.Raycaster();
+            ray.setFromCamera(mouse, camera);
+            const inter = ray.intersectObjects(scene.children);
+            if(inter.length > 0) {
+                const o = inter[0].object;
+                if(["Bread", "Meat", "Lettuce", "Tomato"].includes(o.name) && inventory.length < 3) {
+                    inventory.push(o.name); updateUI();
+                }
+                if(o.parent === currentCustomer || o === currentCustomer) {
+                    if(document.getElementById('final-item').innerText === "READY") serve();
+                }
+            }
         }
 
         function spawn() {
             if(currentCustomer) scene.remove(currentCustomer);
-            currentCustomer = createCharacter(Math.random() > 0.4); scene.add(currentCustomer);
-            currentOrder = ["Bread", "Meat", "Bread"];
+            currentCustomer = new THREE.Group();
+            const h = new THREE.Mesh(new THREE.BoxGeometry(0.4,0.4,0.4), new THREE.MeshStandardMaterial({color:0xffdbac}));
+            h.position.y = 1.7; currentCustomer.add(h);
+            currentCustomer.position.set(0, 0, -10);
+            currentCustomer.userData = { isAnomaly: Math.random() > 0.5 };
+            scene.add(currentCustomer);
         }
 
-        // --- MOBILE INPUTS ---
-        let touchStartX = 0, touchStartY = 0;
-        const joystick = document.getElementById('joystick-knob');
-
-        window.addEventListener('touchstart', (e) => {
-            const touch = e.touches[0];
-            if(touch.clientX < window.innerWidth / 2) { // Left side joystick
-                touchStartX = touch.clientX; touchStartY = touch.clientY;
-            } else { // Right side tap interaction
-                const mouse = new THREE.Vector2((touch.clientX/window.innerWidth)*2-1, -(touch.clientY/window.innerHeight)*2+1);
-                const ray = new THREE.Raycaster(); ray.setFromCamera(mouse, camera);
-                const inter = ray.intersectObjects(scene.children, true);
-                if(inter.length > 0) {
-                    let obj = inter[0].object;
-                    while(obj.parent && obj.parent.type !== "Scene") obj = obj.parent;
-                    if(obj.name === "Protocol Clipboard") document.getElementById('protocol-note').style.display='block';
-                    if(["Bread", "Meat", "Lettuce", "Tomato"].includes(obj.name) && inventory.length < 3) { inventory.push(obj.name); updateUI(); }
-                    if((obj === currentCustomer) && document.getElementById('final-item').innerText === "READY") serve();
-                }
-            }
-        });
-
-        window.addEventListener('touchmove', (e) => {
-            const touch = e.touches[0];
-            if(touch.clientX < window.innerWidth / 2) {
-                let dx = touch.clientX - touchStartX; let dy = touch.clientY - touchStartY;
-                const dist = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
-                const angle = Math.atan2(dy, dx);
-                moveX = Math.cos(angle) * (dist/40); moveZ = Math.sin(angle) * (dist/40);
-                joystick.style.transform = `translate(${Math.cos(angle)*dist}px, ${Math.sin(angle)*dist}px)`;
-            } else {
-                yaw -= (touch.clientX - touchStartX) * 0.001; // Simplistic look
-            }
-        });
-
-        window.addEventListener('touchend', () => { 
-            moveX = 0; moveZ = 0; joystick.style.transform = `translate(0,0)`; 
-        });
-
-        // COOKING LOGIC
-        const cookBtn = document.getElementById('mobile-cook');
-        cookBtn.addEventListener('touchstart', () => { if(inventory.length === 3) gProgress = 1; });
-        cookBtn.addEventListener('touchend', () => { gProgress = 0; document.getElementById('progress-container').style.display='none'; });
-
-        function updateUI() { 
-            for(let i=1; i<=3; i++) {
-                document.getElementById(`slot-${i}`).innerText = inventory[i-1] || "EMPTY";
-            }
-            cookBtn.style.display = (inventory.length === 3) ? "flex" : "none";
+        function updateUI() {
+            for(let i=1; i<=3; i++) document.getElementById(`slot-${i}`).innerText = inventory[i-1] || "EMPTY";
+            document.getElementById('btn-cook').style.display = (inventory.length === 3) ? "flex" : "none";
         }
 
         function serve() {
-            if(currentCustomer.userData.isAnomaly) triggerScare("FED A PARASITE");
-            else { cash += 50; reset(); }
+            if(currentCustomer.userData.isAnomaly) alert("JUMPSCARE!");
+            else { cash+=50; reset(); }
         }
-
-        document.getElementById('mobile-reject').addEventListener('touchstart', () => {
-            if(currentCustomer.userData.isAnomaly) { cash += 25; reset(); }
-            else triggerScare("REJECTED A HUMAN");
-        });
-
-        function reset() { inventory = []; updateUI(); document.getElementById('final-item').innerText=""; spawn(); document.getElementById('cash').innerText=cash; }
-
-        function triggerScare(msg) {
-            gameActive = false;
-            playBeep(); // Placeholder scream
-            const startZ = currentCustomer.position.z;
-            let start = null;
-            function step(timestamp) {
-                if (!start) start = timestamp;
-                let progress = (timestamp - start) / 400;
-                currentCustomer.position.z = startZ + (camera.position.z - startZ) * progress;
-                document.getElementById('scare-flash').style.opacity = progress;
-                if (progress < 1) requestAnimationFrame(step);
-                else { alert(msg); location.reload(); }
-            }
-            requestAnimationFrame(step);
+        function reject() {
+            if(currentCustomer.userData.isAnomaly) { cash+=25; reset(); }
+            else alert("JUMPSCARE!");
         }
+        function reset() { inventory=[]; updateUI(); document.getElementById('final-item').innerText=""; spawn(); document.getElementById('cash').innerText=cash; }
 
-        function playBeep() { /* Simple beep logic */ }
-
-        window.startGame = () => { document.getElementById('start-screen').style.display='none'; gameActive=true; camera.position.set(0, 1.7, 1); spawn(); animate(); };
+        window.startGame = () => { 
+            document.getElementById('start-screen').style.display='none'; 
+            if(!isMobile) document.body.requestPointerLock();
+            gameActive=true; camera.position.set(0, 1.7, 1); spawn(); animate(); 
+        };
 
         function animate() {
             if(!gameActive) return; requestAnimationFrame(animate);
-            camera.rotation.y = yaw;
-            camera.translateX(moveX * 0.1);
-            camera.translateZ(moveZ * 0.1);
-            camera.position.y = 1.7;
+            
+            // Movement Logic (PC + Mobile)
+            const s = 0.08;
+            if(keys['KeyW']) camera.translateZ(-s);
+            if(keys['KeyS']) camera.translateZ(s);
+            if(keys['KeyA']) camera.translateX(-s);
+            if(keys['KeyD']) camera.translateX(s);
+            
+            camera.position.y = 1.7; // Keep player on ground
 
-            if(gProgress > 0) {
-                gProgress += 1.5;
+            // Cooking Logic
+            if(isHoldingG && inventory.length === 3) {
+                gProgress += 1;
                 document.getElementById('progress-container').style.display='block';
-                document.getElementById('progress-bar').style.width = gProgress + '%';
-                if(gProgress >= 100) { document.getElementById('final-item').innerText="READY"; gProgress = 0; }
+                document.getElementById('progress-bar').style.width = gProgress+'%';
+                if(gProgress>=100) { document.getElementById('final-item').innerText="READY"; isHoldingG=false; }
             }
 
             if(currentCustomer.position.z < -3.5) currentCustomer.position.z += 0.03;
