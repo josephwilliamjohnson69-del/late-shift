@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Late Shift - Official Protocol</title>
+    <title>Late Shift - Textured & Guided</title>
     <style>
         body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: white; }
         #hands-display {
@@ -12,58 +12,38 @@
         .ingredient-slot { display: inline-block; width: 85px; height: 35px; border: 1px dashed #444; margin: 0 5px; line-height: 35px; font-size: 14px; }
         .filled { background: #0f0; color: #000; font-weight: bold; }
         
+        /* INTERACTION PROMPT */
         #interaction-prompt {
             position: absolute; top: 55%; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.8); padding: 8px 15px; border-radius: 4px;
-            font-size: 16px; color: #0f0; display: none; pointer-events: none; border: 1px solid #0f0;
-        }
-
-        #protocol-note {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: #f0e68c; color: #000; padding: 25px; border: 5px solid #8b4513;
-            width: 350px; display: none; z-index: 150; box-shadow: 0 0 50px rgba(0,0,0,1);
+            background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px;
+            font-size: 14px; color: #0f0; display: none; pointer-events: none;
         }
 
         #speech-bubble {
             position: absolute; background: #fff; color: #000; padding: 12px; border-radius: 15px; border: 3px solid #333; display: none;
-            font-weight: bold; pointer-events: none; transform: translate(-50%, -100%);
+            font-weight: bold; pointer-events: none; transform: translate(-50%, -100%); box-shadow: 5px 5px 0px rgba(0,0,0,0.5);
         }
         #ui { position: absolute; top: 20px; left: 20px; color: #0f0; z-index: 10; font-size: 20px; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 6px; height: 6px; background: #0f0; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
         #progress-container { position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); width: 240px; height: 15px; border: 2px solid #fff; display: none; }
         #progress-bar { width: 0%; height: 100%; background: #0f0; }
         #start-screen { position:fixed; width:100%; height:100%; background:#000; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-        .btn { background: #f00; color: #fff; border: none; padding: 15px 40px; cursor: pointer; font-size: 20px; margin-top: 20px; font-family: inherit; }
-        
-        /* JUMPSCARE OVERLAY */
-        #scare-flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: red; opacity: 0; pointer-events: none; z-index: 200; }
+        .btn { background: #f00; color: #fff; border: none; padding: 15px 40px; cursor: pointer; font-size: 20px; margin-top: 20px; }
     </style>
 </head>
 <body oncontextmenu="return false;">
 
-    <div id="scare-flash"></div>
-
     <div id="start-screen">
-        <h1 style="color:red; font-size: 70px; margin:0;">LATE SHIFT</h1>
-        <p>RIGHT-CLICK: Look around | WASD: Move | E: Interact | R: Reject</p>
-        <button class="btn" onclick="startGame()">BEGIN SHIFT</button>
-    </div>
-
-    <div id="protocol-note">
-        <h2 style="margin-top:0; border-bottom: 2px solid #000;">SHADOW PROTOCOL</h2>
-        <p><b>1. FLOATERS:</b> Feet must touch ground.</p>
-        <p><b>2. SHADOWLESS:</b> All humans cast shadows.</p>
-        <p><b>3. HEADPHONES:</b> Corporate ban. "Headphones" are fused organic parasites.</p>
-        <p><b>4. FACIAL VOID:</b> Blank faces are hostile.</p>
-        <p><b>5. REVERSED:</b> Check if head is facing the counter.</p>
-        <button onclick="document.getElementById('protocol-note').style.display='none'" style="width:100%; padding:10px; cursor:pointer;">CLOSE (ESC)</button>
+        <h1 style="color:red; font-size: 60px;">LATE SHIFT</h1>
+        <p>RIGHT-CLICK: Look | WASD: Move | F: Trash</p>
+        <button class="btn" onclick="startGame()">CLOCK IN</button>
     </div>
 
     <div id="hands-display">
         <div id="slot-1" class="ingredient-slot">EMPTY</div>
         <div id="slot-2" class="ingredient-slot">EMPTY</div>
         <div id="slot-3" class="ingredient-slot">EMPTY</div>
-        <div id="final-item" style="margin-top: 10px; color: #ffff00; font-weight:bold;"></div>
+        <div id="final-item" style="margin-top: 10px; color: #ffff00;"></div>
     </div>
 
     <div id="interaction-prompt"></div>
@@ -87,218 +67,206 @@
         renderer.shadowMap.enabled = true;
         document.body.appendChild(renderer.domElement);
 
-        // --- AUDIO (Placeholder for scream) ---
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        function playScream() {
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(100, audioCtx.currentTime);
-            osc.frequency.exponentialRampToValueAtTime(1000, audioCtx.currentTime + 0.1);
-            gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+        // --- TEXTURE CREATOR ---
+        function createTex(c1, c2, mode) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = c1; ctx.fillRect(0,0,64,64);
+            ctx.fillStyle = c2;
+            if(mode === 'noise') for(let i=0; i<80; i++) ctx.fillRect(Math.random()*64, Math.random()*64, 4, 4);
+            if(mode === 'vein') for(let i=0; i<5; i++) { ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(Math.random()*64,0); ctx.lineTo(Math.random()*64,64); ctx.stroke(); }
+            const t = new THREE.CanvasTexture(canvas);
+            t.magFilter = THREE.NearestFilter;
+            return t;
         }
 
-        // --- TEXTURES ---
-        function createTex(c1, c2) {
-            const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d'); ctx.fillStyle = c1; ctx.fillRect(0,0,64,64);
-            const ctx2 = canvas.getContext('2d'); ctx2.fillStyle = c2; for(let i=0; i<60; i++) ctx2.fillRect(Math.random()*64, Math.random()*64, 5, 5);
-            const t = new THREE.CanvasTexture(canvas); t.magFilter = THREE.NearestFilter; return t;
-        }
-        const texBread = createTex('#d2b48c', '#8b4513');
-        const texMeat = createTex('#800000', '#ffb6c1');
-        const texLettuce = createTex('#2ecc71', '#006400');
-        const texTomato = createTex('#e74c3c', '#8b0000');
+        const texBread = createTex('#d2b48c', '#8b4513', 'noise');
+        const texMeat = createTex('#800000', '#ff9999', 'noise');
+        const texLettuce = createTex('#2ecc71', '#27ae60', 'vein');
+        const texTomato = createTex('#e74c3c', '#ff5555', 'noise');
 
-        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-        const sun = new THREE.PointLight(0xffffff, 50); sun.position.set(0, 5, -1); sun.castShadow = true;
-        scene.add(sun);
+        // --- WORLD ---
+        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+        const light = new THREE.PointLight(0xffffff, 45);
+        light.position.set(0, 4, -1); light.castShadow = true; scene.add(light);
 
-        const counter = new THREE.Mesh(new THREE.BoxGeometry(8, 1.1, 2), new THREE.MeshStandardMaterial({color: 0x221100}));
+        const counter = new THREE.Mesh(new THREE.BoxGeometry(8, 1.1, 2), new THREE.MeshStandardMaterial({color: 0x1a0d00}));
         counter.position.set(0, 0.55, -2); counter.receiveShadow = true; scene.add(counter);
         
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), new THREE.MeshStandardMaterial({color: 0x050505}));
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({color: 0x0a0a0a}));
         floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
-
-        const clipboard = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.05, 0.7), new THREE.MeshStandardMaterial({color: 0xffffff}));
-        clipboard.position.set(3, 1.12, -1.8); clipboard.name = "Protocol Clipboard"; scene.add(clipboard);
 
         function makeItem(x, tex, name) {
             const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), new THREE.MeshStandardMaterial({map: tex}));
-            m.position.set(x, 1.15, -2.3); m.name = name; scene.add(m);
+            m.position.set(x, 1.15, -2.2); m.name = name; scene.add(m);
         }
-        makeItem(-2.5, texBread, "Bread"); makeItem(-1, texMeat, "Meat"); makeItem(0.5, texLettuce, "Lettuce"); makeItem(2, texTomato, "Tomato");
+        makeItem(-2.5, texBread, "Bread");
+        makeItem(-1, texMeat, "Meat");
+        makeItem(0.5, texLettuce, "Lettuce");
+        makeItem(2, texTomato, "Tomato");
 
+        // --- CHARACTER LOGIC ---
         function createCharacter(isAnomaly) {
             const group = new THREE.Group();
-            const skin = new THREE.MeshStandardMaterial({color: 0xffdbac});
-            const clothes = new THREE.MeshStandardMaterial({color: Math.random() * 0xffffff});
+            const skinMat = new THREE.MeshStandardMaterial({color: 0xffdbac});
+            const clothesMat = new THREE.MeshStandardMaterial({color: Math.random() * 0xffffff});
+            
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), clothesMat);
+            torso.position.y = 1.1; group.add(torso);
+            const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), clothesMat); lLeg.position.set(-0.15, 0.35, 0); group.add(lLeg);
+            const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), clothesMat); rLeg.position.set(0.15, 0.35, 0); group.add(rLeg);
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skinMat); head.position.y = 1.7; group.add(head);
+
             const eyeMat = new THREE.MeshStandardMaterial({color: 0x000000});
-
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), clothes); torso.position.y = 1.1; group.add(torso);
-            const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), clothes); lLeg.position.set(-0.15, 0.35, 0); group.add(lLeg);
-            const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), clothes); rLeg.position.set(0.15, 0.35, 0); group.add(rLeg);
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skin); head.position.y = 1.7; group.add(head);
-
-            const eyes = new THREE.Group();
-            const e1 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), eyeMat); e1.position.set(-0.1, 1.75, 0.21);
-            const e2 = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 0.06), eyeMat); e2.position.set(0.1, 1.75, 0.21);
-            eyes.add(e1, e2); group.add(eyes);
+            const lEye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), eyeMat); lEye.position.set(-0.1, 1.75, 0.21); group.add(lEye);
+            const rEye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), eyeMat); rEye.position.set(0.1, 1.75, 0.21); group.add(rEye);
 
             if(isAnomaly) {
                 const type = Math.floor(Math.random() * 5);
-                group.userData.anomalyType = type;
                 if(type === 0) group.traverse(o => o.castShadow = false);
-                if(type === 1) group.position.y = 0.55; 
-                if(type === 2) { head.rotation.y = Math.PI; eyes.position.z = -0.42; }
-                if(type === 3) { // FIXED HEADPHONES
-                    const band = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.06, 0.15), eyeMat); 
-                    band.position.set(0, 0.22, 0); // Sits on top of head
-                    const cupL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.2), eyeMat); 
-                    cupL.position.set(-0.22, 0, 0); // On the left ear
-                    const cupR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.2), eyeMat); 
-                    cupR.position.set(0.22, 0, 0); // On the right ear
-                    head.add(band, cupL, cupR);
+                if(type === 1) group.position.y = 0.5;
+                if(type === 2) { head.rotation.y = Math.PI; lEye.position.z = -0.21; rEye.position.z = -0.21; }
+                if(type === 3) { // Headphone anomaly
+                    const hp = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.15, 0.15), new THREE.MeshStandardMaterial({color: 0x000000}));
+                    hp.position.y = 1.75; head.add(hp);
                 }
-                if(type === 4) eyes.visible = false;
-            } else { group.traverse(o => o.castShadow = true); }
-            group.position.set(0, 0, -12); group.userData.isAnomaly = isAnomaly;
+                if(type === 4) { lEye.visible = false; rEye.visible = false; }
+            } else {
+                group.traverse(o => o.castShadow = true);
+            }
+            group.position.set(0, 0, -12); group.userData = { isAnomaly };
             return group;
         }
 
-        function spawn() {
+        function spawnCustomer() {
             if(currentCustomer) scene.remove(currentCustomer);
-            currentCustomer = createCharacter(Math.random() > 0.4); scene.add(currentCustomer);
-            const opts = ["Meat", "Lettuce", "Tomato"]; const pick = opts[Math.floor(Math.random()*opts.length)];
+            currentCustomer = createCharacter(Math.random() > 0.45);
+            scene.add(currentCustomer);
+            const opts = ["Meat", "Lettuce", "Tomato"];
+            const pick = opts[Math.floor(Math.random()*opts.length)];
             currentOrder = ["Bread", pick, "Bread"];
-            document.getElementById('speech-bubble').innerHTML = `GIVE ME:<br>${pick.toUpperCase()} SANDWICH`;
+            document.getElementById('speech-bubble').innerHTML = `I WANT:<br>${pick.toUpperCase()} SANDWICH`;
         }
 
-        async function triggerJumpScare(reason) {
-            gameActive = false;
-            document.getElementById('speech-bubble').style.display = 'none';
-            
-            // 1. Walk toward player rapidly
-            const startZ = currentCustomer.position.z;
-            const targetZ = camera.position.z - 0.5;
-            const duration = 400; // ms
-            const startTime = performance.now();
-
-            playScream();
-
-            return new Promise(res => {
-                function dash() {
-                    const now = performance.now();
-                    const t = Math.min(1, (now - startTime) / duration);
-                    currentCustomer.position.z = startZ + (targetZ - startZ) * t;
-                    document.getElementById('scare-flash').style.opacity = t;
-                    
-                    if(t < 1) requestAnimationFrame(dash);
-                    else {
-                        die(reason);
-                        res();
-                    }
-                }
-                dash();
-            });
-        }
-
-        window.startGame = () => { 
-            if(audioCtx.state === 'suspended') audioCtx.resume();
-            document.getElementById('start-screen').style.display='none'; 
-            gameActive=true; camera.position.set(0, 1.7, 1); spawn(); animate(); 
+        window.startGame = () => {
+            document.getElementById('start-screen').style.display = 'none';
+            gameActive = true; camera.position.set(0, 1.7, 1);
+            spawnCustomer(); animate();
         };
 
-        window.addEventListener('mousedown', (e) => { if(e.button===2) isRightClick=true; });
-        window.addEventListener('mouseup', (e) => { if(e.button===2) isRightClick=false; });
-        window.addEventListener('mousemove', (e) => { if(isRightClick && gameActive) { yaw -= e.movementX*0.003; pitch -= e.movementY*0.003; pitch=Math.max(-1.5, Math.min(1.5, pitch)); camera.rotation.set(pitch, yaw, 0, 'YXZ'); } });
+        // --- CONTROLS ---
+        window.addEventListener('mousedown', (e) => { if(e.button === 2) isRightClick = true; });
+        window.addEventListener('mouseup', (e) => { if(e.button === 2) isRightClick = false; });
+        window.addEventListener('mousemove', (e) => {
+            if(isRightClick && gameActive) {
+                yaw -= e.movementX * 0.003; pitch -= e.movementY * 0.003;
+                pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
+                camera.rotation.set(pitch, yaw, 0, 'YXZ');
+            }
+        });
 
         const keys = {};
         window.onkeydown = (e) => { 
             keys[e.code] = true; 
-            if(e.code==='KeyG') isHoldingG=true; 
-            if(e.code==='KeyF') { inventory=[]; updateUI(); document.getElementById('final-item').innerText=""; }
-            if(e.code==='Escape') document.getElementById('protocol-note').style.display='none';
+            if(e.code === 'KeyG') isHoldingG = true; 
+            if(e.code === 'KeyF') { inventory = []; updateUI(); document.getElementById('final-item').innerText = ""; }
         };
-        window.onkeyup = (e) => { keys[e.code]=false; if(e.code==='KeyG') { isHoldingG=false; gProgress=0; document.getElementById('progress-container').style.display='none'; } };
+        window.onkeyup = (e) => { 
+            keys[e.code] = false; 
+            if(e.code === 'KeyG') { isHoldingG = false; gProgress = 0; document.getElementById('progress-container').style.display = 'none'; } 
+        };
 
         window.addEventListener('keydown', (e) => {
             if(!gameActive) return;
             if(e.code === 'KeyE') {
                 const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(), camera);
-                const inter = ray.intersectObjects(scene.children, true);
+                const inter = ray.intersectObjects(scene.children);
                 if(inter.length > 0) {
-                    let obj = inter[0].object;
-                    while(obj.parent && !["Bread", "Meat", "Lettuce", "Tomato", "Protocol Clipboard"].includes(obj.name) && obj !== currentCustomer) {
-                        obj = obj.parent;
-                        if(obj === currentCustomer) break;
+                    const name = inter[0].object.name;
+                    if(["Bread", "Meat", "Lettuce", "Tomato"].includes(name) && inventory.length < 3) {
+                        inventory.push(name); updateUI();
                     }
-                    
-                    if(obj.name === "Protocol Clipboard") document.getElementById('protocol-note').style.display='block';
-                    if(["Bread", "Meat", "Lettuce", "Tomato"].includes(obj.name) && inventory.length < 3) { inventory.push(obj.name); updateUI(); }
-                    if((obj === currentCustomer || obj.parent === currentCustomer) && document.getElementById('final-item').innerText === "READY") serve();
+                    if((inter[0].object.parent === currentCustomer || inter[0].object === currentCustomer) && document.getElementById('final-item').innerText === "READY") {
+                        serve();
+                    }
                 }
             }
             if(e.code === 'KeyR') reject();
         });
 
-        function updateUI() { for(let i=1; i<=3; i++) { const s=document.getElementById(`slot-${i}`); s.innerText=inventory[i-1]?inventory[i-1].toUpperCase():"EMPTY"; inventory[i-1]?s.classList.add('filled'):s.classList.remove('filled'); } }
-        
-        function serve() { 
-            if(currentCustomer.position.z < -4) return; 
-            if(inventory.every((v,i)=>v===currentOrder[i])) { 
-                if(currentCustomer.userData.isAnomaly) triggerJumpScare("YOU FED THE PARASITE."); 
-                else { cash+=50; reset(); } 
-            } 
+        function updateUI() {
+            for(let i=1; i<=3; i++) {
+                const slot = document.getElementById(`slot-${i}`);
+                slot.innerText = inventory[i-1] ? inventory[i-1].toUpperCase() : "EMPTY";
+                inventory[i-1] ? slot.classList.add('filled') : slot.classList.remove('filled');
+            }
         }
 
-        function reject() { 
-            if(currentCustomer.position.z < -4) return; 
-            if(currentCustomer.userData.isAnomaly) { cash+=25; reset(); } 
-            else triggerJumpScare("THAT WAS A HUMAN."); 
+        function serve() {
+            if(currentCustomer.position.z < -4) return;
+            const correct = inventory.every((v, i) => v === currentOrder[i]);
+            if(!correct) return;
+            if(currentCustomer.userData.isAnomaly) die("YOU FED AN ANOMALY.");
+            else { cash += 50; reset(); }
         }
 
-        function reset() { inventory=[]; document.getElementById('final-item').innerText=""; document.getElementById('cash').innerText=cash; updateUI(); spawn(); }
-        
-        function die(r) { 
-            gameActive=false; 
-            document.getElementById('scare-flash').style.opacity = 0;
-            document.getElementById('start-screen').style.display='flex'; 
-            document.getElementById('start-screen').innerHTML=`<h1 style="color:red; font-size:40px;">${r}</h1><button class="btn" onclick="location.reload()">RETRY SHIFT</button>`; 
+        function reject() {
+            if(currentCustomer.position.z < -4) return;
+            if(currentCustomer.userData.isAnomaly) { cash += 25; reset(); }
+            else die("YOU REJECTED A HUMAN.");
+        }
+
+        function reset() {
+            inventory = []; document.getElementById('final-item').innerText = "";
+            document.getElementById('cash').innerText = cash;
+            updateUI(); spawnCustomer();
+        }
+
+        function die(r) {
+            gameActive = false;
+            document.getElementById('start-screen').style.display = 'flex';
+            document.getElementById('start-screen').innerHTML = `<h1 style="color:red">${r}</h1><button class="btn" onclick="location.reload()">RESTART</button>`;
         }
 
         function animate() {
-            if(!gameActive) return; requestAnimationFrame(animate);
-            const s = 0.06; if(keys['KeyW']) camera.translateZ(-s); if(keys['KeyS']) camera.translateZ(s); if(keys['KeyA']) camera.translateX(-s); if(keys['KeyD']) camera.translateX(s);
+            if(!gameActive) return;
+            requestAnimationFrame(animate);
+            const s = 0.06;
+            if(keys['KeyW']) camera.translateZ(-s); if(keys['KeyS']) camera.translateZ(s);
+            if(keys['KeyA']) camera.translateX(-s); if(keys['KeyD']) camera.translateX(s);
             camera.position.y = 1.7;
 
+            // Update Interaction Prompt
             const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(), camera);
-            const inter = ray.intersectObjects(scene.children, true);
-            const p = document.getElementById('interaction-prompt');
+            const inter = ray.intersectObjects(scene.children);
+            const prompt = document.getElementById('interaction-prompt');
             if(inter.length > 0) {
-                let o = inter[0].object;
-                while(o.parent && !["Bread", "Meat", "Lettuce", "Tomato", "Protocol Clipboard"].includes(o.name) && o !== currentCustomer) o = o.parent;
-                
-                if(o.name === "Protocol Clipboard") { p.style.display='block'; p.innerText="[E] Read Protocol"; }
-                else if(["Bread", "Meat", "Lettuce", "Tomato"].includes(o.name)) { p.style.display='block'; p.innerText=`[E] Grab ${o.name}`; }
-                else if((o===currentCustomer || o.parent===currentCustomer) && document.getElementById('final-item').innerText==="READY") { p.style.display='block'; p.innerText="[E] Serve Customer"; }
-                else p.style.display='none';
-            } else p.style.display='none';
+                const obj = inter[0].object;
+                if(["Bread", "Meat", "Lettuce", "Tomato"].includes(obj.name)) {
+                    prompt.style.display = 'block';
+                    prompt.innerText = `[E] Grab ${obj.name}`;
+                } else if((obj.parent === currentCustomer || obj === currentCustomer) && document.getElementById('final-item').innerText === "READY") {
+                    prompt.style.display = 'block';
+                    prompt.innerText = `[E] Serve Customer`;
+                } else { prompt.style.display = 'none'; }
+            } else { prompt.style.display = 'none'; }
 
             if(isHoldingG && inventory.length === 3) {
-                document.getElementById('progress-container').style.display='block'; gProgress += 1.2;
-                document.getElementById('progress-bar').style.width = gProgress+'%';
-                if(gProgress>=100) { document.getElementById('final-item').innerText="READY"; isHoldingG=false; document.getElementById('progress-container').style.display='none'; }
+                document.getElementById('progress-container').style.display = 'block';
+                gProgress += 1.2;
+                document.getElementById('progress-bar').style.width = gProgress + '%';
+                if(gProgress >= 100) { document.getElementById('final-item').innerText = "READY"; isHoldingG = false; document.getElementById('progress-container').style.display = 'none'; }
             }
 
-            if(currentCustomer.position.z < -3.5) { currentCustomer.position.z += 0.05; }
-            else {
-                const vec = new THREE.Vector3(0, 2.3, -3.5); vec.project(camera);
-                const x = (vec.x * .5 + .5) * window.innerWidth; const y = (vec.y * -.5 + .5) * window.innerHeight;
-                const b = document.getElementById('speech-bubble'); b.style.display='block'; b.style.left=x+'px'; b.style.top=y+'px';
+            if(currentCustomer.position.z < -3.5) {
+                currentCustomer.position.z += 0.05;
+            } else {
+                const vector = new THREE.Vector3(0, 2.3, -3.5); vector.project(camera);
+                const x = (vector.x * .5 + .5) * window.innerWidth;
+                const y = (vector.y * -.5 + .5) * window.innerHeight;
+                const bubble = document.getElementById('speech-bubble');
+                bubble.style.display = 'block'; bubble.style.left = x + 'px'; bubble.style.top = y + 'px';
             }
             renderer.render(scene, camera);
         }
