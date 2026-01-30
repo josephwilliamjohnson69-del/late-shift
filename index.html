@@ -2,274 +2,267 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Late Shift - Textured & Guided</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Late Shift - Full Protocol</title>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: white; }
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Courier New', monospace; color: white; touch-action: none; }
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         #hands-display {
             position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.85); border: 2px solid #0f0; padding: 15px; border-radius: 5px; text-align: center; z-index: 20;
+            background: rgba(0, 0, 0, 0.85); border: 2px solid #0f0; padding: 15px; border-radius: 5px; text-align: center; pointer-events: auto;
         }
-        .ingredient-slot { display: inline-block; width: 85px; height: 35px; border: 1px dashed #444; margin: 0 5px; line-height: 35px; font-size: 14px; }
+        .slot { display: inline-block; width: 80px; height: 35px; border: 1px dashed #444; margin: 0 5px; line-height: 35px; font-size: 12px; }
         .filled { background: #0f0; color: #000; font-weight: bold; }
         
-        /* INTERACTION PROMPT */
-        #interaction-prompt {
-            position: absolute; top: 55%; left: 50%; transform: translateX(-50%);
-            background: rgba(0,0,0,0.6); padding: 5px 10px; border-radius: 4px;
-            font-size: 14px; color: #0f0; display: none; pointer-events: none;
+        /* SPEECH BUBBLE */
+        #speech-bubble {
+            position: absolute; background: #fff; color: #000; padding: 10px; border-radius: 10px; border: 2px solid #333;
+            display: none; font-weight: bold; pointer-events: none; transform: translate(-50%, -100%); z-index: 50;
         }
 
-        #speech-bubble {
-            position: absolute; background: #fff; color: #000; padding: 12px; border-radius: 15px; border: 3px solid #333; display: none;
-            font-weight: bold; pointer-events: none; transform: translate(-50%, -100%); box-shadow: 5px 5px 0px rgba(0,0,0,0.5);
-        }
-        #ui { position: absolute; top: 20px; left: 20px; color: #0f0; z-index: 10; font-size: 20px; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: white; border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; }
-        #progress-container { position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%); width: 240px; height: 15px; border: 2px solid #fff; display: none; }
-        #progress-bar { width: 0%; height: 100%; background: #0f0; }
-        #start-screen { position:fixed; width:100%; height:100%; background:#000; z-index:100; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+        #joystick-zone { position: absolute; bottom: 40px; left: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid #0f0; pointer-events: auto; display: none; }
+        #joystick-stick { position: absolute; top: 35px; left: 35px; width: 50px; height: 50px; background: #0f0; border-radius: 50%; opacity: 0.6; }
+        #action-btns { position: absolute; bottom: 40px; right: 40px; pointer-events: auto; display: none; flex-direction: column; gap: 15px; }
+        .m-btn { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; border: 3px solid #fff; }
+        #btn-reject { background: rgba(255,0,0,0.5); border-color: red; }
+        #btn-cook { background: rgba(255,255,0,0.5); border-color: yellow; color: #000; display: none; }
+
+        #start-screen { position: fixed; inset: 0; background: #000; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;}
         .btn { background: #f00; color: #fff; border: none; padding: 15px 40px; cursor: pointer; font-size: 20px; margin-top: 20px; }
+        #scare-overlay { position: fixed; inset: 0; background: red; opacity: 0; pointer-events: none; z-index: 200; }
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: #0f0; border-radius: 50%; transform: translate(-50%, -50%); }
+        #progress-wrap { position: absolute; bottom: 150px; left: 50%; transform: translateX(-50%); width: 200px; height: 15px; border: 2px solid #fff; display: none; }
+        #progress-fill { width: 0%; height: 100%; background: #0f0; }
     </style>
 </head>
-<body oncontextmenu="return false;">
+<body>
+
+    <div id="scare-overlay"></div>
+    <div id="speech-bubble"></div>
 
     <div id="start-screen">
-        <h1 style="color:red; font-size: 60px;">LATE SHIFT</h1>
-        <p>RIGHT-CLICK: Look | WASD: Move | F: Trash</p>
-        <button class="btn" onclick="startGame()">CLOCK IN</button>
+        <h1 style="color:red; font-size: 50px;">LATE SHIFT</h1>
+        <p>PC: WASD + Mouse + E/R/G<br>MOBILE: Joystick + Tap Items</p>
+        <button class="btn" onclick="initGame()">BEGIN SHIFT</button>
     </div>
 
-    <div id="hands-display">
-        <div id="slot-1" class="ingredient-slot">EMPTY</div>
-        <div id="slot-2" class="ingredient-slot">EMPTY</div>
-        <div id="slot-3" class="ingredient-slot">EMPTY</div>
-        <div id="final-item" style="margin-top: 10px; color: #ffff00;"></div>
+    <div id="ui-layer">
+        <div id="ui-text" style="padding:20px; color:#0f0;">CASH: $<span id="cash">0</span></div>
+        <div id="hands-display">
+            <div id="slot-1" class="slot">EMPTY</div>
+            <div id="slot-2" class="slot">EMPTY</div>
+            <div id="slot-3" class="slot">EMPTY</div>
+            <div id="ready-text" style="color:yellow; font-weight:bold; margin-top:5px;"></div>
+        </div>
+        <div id="joystick-zone"><div id="joystick-stick"></div></div>
+        <div id="action-btns">
+            <div id="btn-cook" class="m-btn">COOK</div>
+            <div id="btn-reject" class="m-btn">REJECT</div>
+        </div>
+        <div id="crosshair"></div>
+        <div id="progress-wrap"><div id="progress-fill"></div></div>
     </div>
-
-    <div id="interaction-prompt"></div>
-    <div id="speech-bubble"></div>
-    <div id="ui">CASH: $<span id="cash">0</span></div>
-    <div id="progress-container"><div id="progress-bar"></div></div>
-    <div id="crosshair"></div>
 
     <script type="module">
         import * as THREE from 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.module.min.js';
 
-        let cash = 0, currentCustomer = null, gameActive = false, inventory = [];
-        let isRightClick = false, yaw = 0, pitch = 0, gProgress = 0, isHoldingG = false;
-        let currentOrder = [];
+        let scene, camera, renderer, currentCustomer;
+        let gameActive = false, cash = 0, inventory = [], keys = {};
+        let yaw = 0, pitch = 0, gProgress = 0, isHoldingG = false;
+        let moveX = 0, moveZ = 0, currentOrderTarget = "";
 
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.shadowMap.enabled = true;
-        document.body.appendChild(renderer.domElement);
+        const isMobile = /Android|iPhone|iPad/i.test(navigator.userAgent);
 
-        // --- TEXTURE CREATOR ---
-        function createTex(c1, c2, mode) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = c1; ctx.fillRect(0,0,64,64);
-            ctx.fillStyle = c2;
-            if(mode === 'noise') for(let i=0; i<80; i++) ctx.fillRect(Math.random()*64, Math.random()*64, 4, 4);
-            if(mode === 'vein') for(let i=0; i<5; i++) { ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(Math.random()*64,0); ctx.lineTo(Math.random()*64,64); ctx.stroke(); }
-            const t = new THREE.CanvasTexture(canvas);
-            t.magFilter = THREE.NearestFilter;
-            return t;
+        // --- TEXTURE GENERATOR ---
+        function createTex(c1, c2) {
+            const canvas = document.createElement('canvas'); canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d'); ctx.fillStyle = c1; ctx.fillRect(0,0,64,64);
+            ctx.fillStyle = c2; for(let i=0; i<40; i++) ctx.fillRect(Math.random()*64, Math.random()*64, 4, 4);
+            return new THREE.CanvasTexture(canvas);
         }
+        const texBread = createTex('#d2b48c', '#8b4513');
+        const texMeat = createTex('#800000', '#ffb6c1');
+        const texLettuce = createTex('#2ecc71', '#006400');
+        const texTomato = createTex('#e74c3c', '#8b0000');
 
-        const texBread = createTex('#d2b48c', '#8b4513', 'noise');
-        const texMeat = createTex('#800000', '#ff9999', 'noise');
-        const texLettuce = createTex('#2ecc71', '#27ae60', 'vein');
-        const texTomato = createTex('#e74c3c', '#ff5555', 'noise');
+        function init() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            document.body.appendChild(renderer.domElement);
 
-        // --- WORLD ---
-        scene.add(new THREE.AmbientLight(0xffffff, 0.4));
-        const light = new THREE.PointLight(0xffffff, 45);
-        light.position.set(0, 4, -1); light.castShadow = true; scene.add(light);
-
-        const counter = new THREE.Mesh(new THREE.BoxGeometry(8, 1.1, 2), new THREE.MeshStandardMaterial({color: 0x1a0d00}));
-        counter.position.set(0, 0.55, -2); counter.receiveShadow = true; scene.add(counter);
-        
-        const floor = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.MeshStandardMaterial({color: 0x0a0a0a}));
-        floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
-
-        function makeItem(x, tex, name) {
-            const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), new THREE.MeshStandardMaterial({map: tex}));
-            m.position.set(x, 1.15, -2.2); m.name = name; scene.add(m);
-        }
-        makeItem(-2.5, texBread, "Bread");
-        makeItem(-1, texMeat, "Meat");
-        makeItem(0.5, texLettuce, "Lettuce");
-        makeItem(2, texTomato, "Tomato");
-
-        // --- CHARACTER LOGIC ---
-        function createCharacter(isAnomaly) {
-            const group = new THREE.Group();
-            const skinMat = new THREE.MeshStandardMaterial({color: 0xffdbac});
-            const clothesMat = new THREE.MeshStandardMaterial({color: Math.random() * 0xffffff});
-            
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), clothesMat);
-            torso.position.y = 1.1; group.add(torso);
-            const lLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), clothesMat); lLeg.position.set(-0.15, 0.35, 0); group.add(lLeg);
-            const rLeg = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.7, 0.2), clothesMat); rLeg.position.set(0.15, 0.35, 0); group.add(rLeg);
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skinMat); head.position.y = 1.7; group.add(head);
-
-            const eyeMat = new THREE.MeshStandardMaterial({color: 0x000000});
-            const lEye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), eyeMat); lEye.position.set(-0.1, 1.75, 0.21); group.add(lEye);
-            const rEye = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.05, 0.05), eyeMat); rEye.position.set(0.1, 1.75, 0.21); group.add(rEye);
-
-            if(isAnomaly) {
-                const type = Math.floor(Math.random() * 5);
-                if(type === 0) group.traverse(o => o.castShadow = false);
-                if(type === 1) group.position.y = 0.5;
-                if(type === 2) { head.rotation.y = Math.PI; lEye.position.z = -0.21; rEye.position.z = -0.21; }
-                if(type === 3) { // Headphone anomaly
-                    const hp = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.15, 0.15), new THREE.MeshStandardMaterial({color: 0x000000}));
-                    hp.position.y = 1.75; head.add(hp);
-                }
-                if(type === 4) { lEye.visible = false; rEye.visible = false; }
-            } else {
-                group.traverse(o => o.castShadow = true);
+            if(isMobile) {
+                document.getElementById('joystick-zone').style.display = 'block';
+                document.getElementById('action-btns').style.display = 'flex';
+                document.getElementById('crosshair').style.display = 'none';
             }
-            group.position.set(0, 0, -12); group.userData = { isAnomaly };
-            return group;
+
+            scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+            const light = new THREE.PointLight(0xffffff, 60); light.position.set(0, 5, -2); light.castShadow = true;
+            scene.add(light);
+
+            const floor = new THREE.Mesh(new THREE.PlaneGeometry(50, 50), new THREE.MeshStandardMaterial({color: 0x111111}));
+            floor.rotation.x = -Math.PI/2; floor.receiveShadow = true; scene.add(floor);
+
+            const counter = new THREE.Mesh(new THREE.BoxGeometry(8, 1.1, 2), new THREE.MeshStandardMaterial({color: 0x221100}));
+            counter.position.set(0, 0.55, -2); counter.receiveShadow = true; scene.add(counter);
+
+            makeIngredient(-2.5, texBread, "Bread");
+            makeIngredient(-1, texMeat, "Meat");
+            makeIngredient(0.5, texLettuce, "Lettuce");
+            makeIngredient(2, texTomato, "Tomato");
+
+            spawnCustomer();
+            animate();
+        }
+
+        function makeIngredient(x, tex, name) {
+            const m = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), new THREE.MeshStandardMaterial({map: tex}));
+            m.position.set(x, 1.15, -2.4); m.name = name; scene.add(m);
         }
 
         function spawnCustomer() {
             if(currentCustomer) scene.remove(currentCustomer);
-            currentCustomer = createCharacter(Math.random() > 0.45);
+            const group = new THREE.Group();
+            const skin = new THREE.MeshStandardMaterial({color: 0xffdbac});
+            const clothes = new THREE.MeshStandardMaterial({color: Math.random() * 0xffffff});
+
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.3), clothes);
+            torso.position.y = 1.1; torso.castShadow = true; group.add(torso);
+            
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.4, 0.4), skin);
+            head.position.y = 1.7; head.castShadow = true; group.add(head);
+
+            const isAnomaly = Math.random() > 0.4;
+            if(isAnomaly) {
+                const mat = new THREE.MeshStandardMaterial({color: 0x000000});
+                const band = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.05, 0.15), mat);
+                band.position.y = 0.22;
+                const cL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.2), mat); cL.position.set(-0.22, 0, 0);
+                const cR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.25, 0.2), mat); cR.position.set(0.22, 0, 0);
+                head.add(band, cL, cR);
+            }
+
+            group.position.set(0, 0, -12);
+            group.userData = { isAnomaly };
+            currentCustomer = group;
             scene.add(currentCustomer);
-            const opts = ["Meat", "Lettuce", "Tomato"];
-            const pick = opts[Math.floor(Math.random()*opts.length)];
-            currentOrder = ["Bread", pick, "Bread"];
-            document.getElementById('speech-bubble').innerHTML = `I WANT:<br>${pick.toUpperCase()} SANDWICH`;
+
+            const options = ["MEAT", "LETTUCE", "TOMATO"];
+            currentOrderTarget = options[Math.floor(Math.random()*3)];
+            document.getElementById('speech-bubble').innerHTML = `GIVE ME:<br>${currentOrderTarget} SANDWICH`;
         }
 
-        window.startGame = () => {
-            document.getElementById('start-screen').style.display = 'none';
-            gameActive = true; camera.position.set(0, 1.7, 1);
-            spawnCustomer(); animate();
-        };
-
-        // --- CONTROLS ---
-        window.addEventListener('mousedown', (e) => { if(e.button === 2) isRightClick = true; });
-        window.addEventListener('mouseup', (e) => { if(e.button === 2) isRightClick = false; });
-        window.addEventListener('mousemove', (e) => {
-            if(isRightClick && gameActive) {
-                yaw -= e.movementX * 0.003; pitch -= e.movementY * 0.003;
-                pitch = Math.max(-Math.PI/2, Math.min(Math.PI/2, pitch));
-                camera.rotation.set(pitch, yaw, 0, 'YXZ');
-            }
-        });
-
-        const keys = {};
-        window.onkeydown = (e) => { 
+        // --- INPUTS ---
+        window.onkeydown = e => { 
             keys[e.code] = true; 
-            if(e.code === 'KeyG') isHoldingG = true; 
-            if(e.code === 'KeyF') { inventory = []; updateUI(); document.getElementById('final-item').innerText = ""; }
+            if(e.code === 'KeyE') handleAction();
+            if(e.code === 'KeyR') handleReject();
+            if(e.code === 'KeyG') isHoldingG = true;
         };
-        window.onkeyup = (e) => { 
+        window.onkeyup = e => { 
             keys[e.code] = false; 
-            if(e.code === 'KeyG') { isHoldingG = false; gProgress = 0; document.getElementById('progress-container').style.display = 'none'; } 
+            if(e.code === 'KeyG') { isHoldingG = false; gProgress = 0; document.getElementById('progress-wrap').style.display='none'; }
+        };
+        window.onmousemove = e => { if(gameActive && !isMobile) { yaw -= e.movementX*0.002; pitch -= e.movementY*0.002; pitch=Math.max(-1.5,1.5,pitch); camera.rotation.set(pitch, yaw, 0, 'YXZ'); } };
+
+        window.ontouchstart = e => {
+            const t = e.touches[0];
+            if(t.clientX < window.innerWidth/2) { moveX=0; moveZ=0; }
+            else { handleAction(t.clientX, t.clientY); }
         };
 
-        window.addEventListener('keydown', (e) => {
-            if(!gameActive) return;
-            if(e.code === 'KeyE') {
-                const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(), camera);
-                const inter = ray.intersectObjects(scene.children);
-                if(inter.length > 0) {
-                    const name = inter[0].object.name;
-                    if(["Bread", "Meat", "Lettuce", "Tomato"].includes(name) && inventory.length < 3) {
-                        inventory.push(name); updateUI();
-                    }
-                    if((inter[0].object.parent === currentCustomer || inter[0].object === currentCustomer) && document.getElementById('final-item').innerText === "READY") {
-                        serve();
-                    }
-                }
+        function handleAction(tx, ty) {
+            const ray = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            if(tx) { mouse.x=(tx/window.innerWidth)*2-1; mouse.y=-(ty/window.innerHeight)*2+1; }
+            ray.setFromCamera(mouse, camera);
+            const inter = ray.intersectObjects(scene.children, true);
+            if(inter.length > 0) {
+                let o = inter[0].object;
+                while(o.parent && o.parent.type !== "Scene") o = o.parent;
+                if(["Bread", "Meat", "Lettuce", "Tomato"].includes(o.name) && inventory.length < 3) { inventory.push(o.name); updateUI(); }
+                if(o === currentCustomer && document.getElementById('ready-text').innerText === "READY") handleServe();
             }
-            if(e.code === 'KeyR') reject();
-        });
+        }
 
         function updateUI() {
             for(let i=1; i<=3; i++) {
-                const slot = document.getElementById(`slot-${i}`);
-                slot.innerText = inventory[i-1] ? inventory[i-1].toUpperCase() : "EMPTY";
-                inventory[i-1] ? slot.classList.add('filled') : slot.classList.remove('filled');
+                const s = document.getElementById(`slot-${i}`);
+                if(inventory[i-1]) { s.innerText = inventory[i-1].toUpperCase(); s.classList.add('filled'); }
+                else { s.innerText = "EMPTY"; s.classList.remove('filled'); }
             }
+            document.getElementById('btn-cook').style.display = (inventory.length === 3) ? 'flex' : 'none';
         }
 
-        function serve() {
-            if(currentCustomer.position.z < -4) return;
-            const correct = inventory.every((v, i) => v === currentOrder[i]);
-            if(!correct) return;
-            if(currentCustomer.userData.isAnomaly) die("YOU FED AN ANOMALY.");
-            else { cash += 50; reset(); }
+        function handleServe() {
+            const correct = (inventory[0]==="Bread" && inventory[2]==="Bread" && inventory[1].toUpperCase()===currentOrderTarget);
+            if(correct && !currentCustomer.userData.isAnomaly) { cash += 50; reset(); }
+            else triggerScare("FAILED PROTOCOL");
         }
 
-        function reject() {
-            if(currentCustomer.position.z < -4) return;
+        function handleReject() {
             if(currentCustomer.userData.isAnomaly) { cash += 25; reset(); }
-            else die("YOU REJECTED A HUMAN.");
+            else triggerScare("REJECTED A HUMAN");
         }
 
-        function reset() {
-            inventory = []; document.getElementById('final-item').innerText = "";
-            document.getElementById('cash').innerText = cash;
-            updateUI(); spawnCustomer();
+        function reset() { 
+            inventory = []; updateUI(); 
+            document.getElementById('ready-text').innerText=""; document.getElementById('cash').innerText=cash;
+            spawnCustomer(); 
         }
 
-        function die(r) {
+        function triggerScare(msg) {
             gameActive = false;
-            document.getElementById('start-screen').style.display = 'flex';
-            document.getElementById('start-screen').innerHTML = `<h1 style="color:red">${r}</h1><button class="btn" onclick="location.reload()">RESTART</button>`;
+            document.getElementById('speech-bubble').style.display = 'none';
+            const ac = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ac.createOscillator(); const g = ac.createGain();
+            osc.type='sawtooth'; osc.frequency.setValueAtTime(100, ac.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(900, ac.currentTime + 0.3);
+            g.gain.setValueAtTime(0.5, ac.currentTime); g.gain.linearRampToValueAtTime(0, ac.currentTime + 0.6);
+            osc.connect(g); g.connect(ac.destination); osc.start();
+
+            let start = null;
+            function dash(now) {
+                if(!start) start = now; let t = (now-start)/350;
+                currentCustomer.position.z = -3.5 + (camera.position.z - -3.5) * Math.min(t, 1);
+                document.getElementById('scare-overlay').style.opacity = t;
+                if(t < 1.2) requestAnimationFrame(dash);
+                else { alert(msg); location.reload(); }
+            }
+            requestAnimationFrame(dash);
         }
 
         function animate() {
-            if(!gameActive) return;
-            requestAnimationFrame(animate);
-            const s = 0.06;
+            if(!gameActive) return; requestAnimationFrame(animate);
+            const s = 0.08;
             if(keys['KeyW']) camera.translateZ(-s); if(keys['KeyS']) camera.translateZ(s);
             if(keys['KeyA']) camera.translateX(-s); if(keys['KeyD']) camera.translateX(s);
             camera.position.y = 1.7;
 
-            // Update Interaction Prompt
-            const ray = new THREE.Raycaster(); ray.setFromCamera(new THREE.Vector2(), camera);
-            const inter = ray.intersectObjects(scene.children);
-            const prompt = document.getElementById('interaction-prompt');
-            if(inter.length > 0) {
-                const obj = inter[0].object;
-                if(["Bread", "Meat", "Lettuce", "Tomato"].includes(obj.name)) {
-                    prompt.style.display = 'block';
-                    prompt.innerText = `[E] Grab ${obj.name}`;
-                } else if((obj.parent === currentCustomer || obj === currentCustomer) && document.getElementById('final-item').innerText === "READY") {
-                    prompt.style.display = 'block';
-                    prompt.innerText = `[E] Serve Customer`;
-                } else { prompt.style.display = 'none'; }
-            } else { prompt.style.display = 'none'; }
-
             if(isHoldingG && inventory.length === 3) {
-                document.getElementById('progress-container').style.display = 'block';
-                gProgress += 1.2;
-                document.getElementById('progress-bar').style.width = gProgress + '%';
-                if(gProgress >= 100) { document.getElementById('final-item').innerText = "READY"; isHoldingG = false; document.getElementById('progress-container').style.display = 'none'; }
+                gProgress += 1.5;
+                document.getElementById('progress-wrap').style.display='block';
+                document.getElementById('progress-fill').style.width = gProgress + '%';
+                if(gProgress >= 100) { document.getElementById('ready-text').innerText="READY"; isHoldingG = false; }
             }
 
             if(currentCustomer.position.z < -3.5) {
                 currentCustomer.position.z += 0.05;
+                document.getElementById('speech-bubble').style.display = 'none';
             } else {
-                const vector = new THREE.Vector3(0, 2.3, -3.5); vector.project(camera);
-                const x = (vector.x * .5 + .5) * window.innerWidth;
-                const y = (vector.y * -.5 + .5) * window.innerHeight;
-                const bubble = document.getElementById('speech-bubble');
-                bubble.style.display = 'block'; bubble.style.left = x + 'px'; bubble.style.top = y + 'px';
+                const vec = new THREE.Vector3(0, 2.2, -3.5); vec.project(camera);
+                const x = (vec.x * .5 + .5) * window.innerWidth;
+                const y = (vec.y * -.5 + .5) * window.innerHeight;
+                const b = document.getElementById('speech-bubble');
+                b.style.display = 'block'; b.style.left = x+'px'; b.style.top = y+'px';
             }
             renderer.render(scene, camera);
         }
+
+        window.initGame = () => { document.getElementById('start-screen').style.display='none'; gameActive=true; if(!isMobile) document.body.requestPointerLock(); init(); };
     </script>
 </body>
 </html>
